@@ -1,0 +1,360 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="height=device-height, width=device-width, initial-scale=1">
+<title>Model Runner</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.
+js"></script>
+<script src="js/flot/jquery.flot.js.txt"></script>
+<script src="js/model_runner.js"></script>
+<script src=""></script>
+<style>
+	*
+	{
+		font-family: "Helvetica";
+	}
+
+	.plot_options, .plot_frame
+	{
+		float: top;
+		display: block;
+		min-height: 400px;
+		margin-left: 2px;
+		margin-right: 2px;
+		border: solid 2px #585858;
+		border-radius: 7px;
+		margin-bottom: 2%;
+	}
+
+	.plot_options
+	{
+		width: 33%;
+		float: left;
+		background: #ffcc99;
+	}
+	
+	.plot_frame 
+	{
+		border: solid 2px #585858;
+		border-radius: 7px;
+		width: 63%;
+		float: right;
+		background: #ffffcc;
+	}
+
+	.plot_inputs, .plot_outputs
+	{
+		float: bottom;
+		display: block;
+		min-height: 200px;
+		margin-left: 2px;
+		margin-right: 2px;
+		border: solid 2px #585858;
+		border-radius: 5px;
+		width: 48%;
+		margin-top: 2px;
+		margin-bottom: 2px;
+	}
+
+	.plot_inputs
+	{
+		height: 40%;
+		background: #ffffff;
+		float: left;
+		background: #ececec;
+	}
+
+	.plot_outputs
+	{
+		height: 40%;
+		background: #ffffff;
+		float: right;
+		background: #ececec;
+	}
+
+	.command
+	{
+		display: block;
+		min-height: 15px;
+		margin-top = 2px;
+		margin-left = 2px;
+		float: top;
+	}
+
+	.div_col
+	{
+		float: top;
+	}
+
+	.command_row, .div_row
+	{
+		width: 96%;
+		float: left;
+		margin: 2px;
+	}
+
+	.div_row
+	{
+		border: solid 2px #a0a0a0;
+		border-radius: 5px;
+	}
+
+	.header_text
+	{
+		font-size: 12pt;
+		font-weight: bold;
+		float: top, left;
+		margin-left: 2px;
+	}
+
+	.file_list
+	{
+		display: inline;
+		float: left;
+		margin-left: 4px;
+		font-size: 10pt;
+	}
+
+	.outer_left_field, .outer_right_field, .number_field
+	{
+		float: left;
+		width: 45%;
+		padding: 1px;
+	}
+	
+	.number_field
+	{
+		float: left;
+		min-width: 20px;
+		max-width: 40px;
+	}
+
+	.outer_right_field
+	{
+		position: relative;
+	}
+	
+	.browse_off
+	{
+  		color: #000000;
+  		background-color: #aaaaaa;
+	}
+
+	.browse_on
+	{
+  		color: #0000ff;
+  		background-color: #efefef;
+	}
+
+	.progress_indicator
+	{
+		margin-left: 5%;
+		position: relative;
+		top: 50%;
+		width: 90%;	
+	}
+
+	.progress_frame
+	{
+		opacity: 90%;
+		float: top;
+	}
+
+</style>
+<script>
+$(document).ready(function() {
+	//test_plot();
+	var allFiles = [];
+	var allOutput = [];
+
+	//$("#progress_indicator").show();
+	$("#progress_parent").hide();
+
+	$("#custom_year_selection_value").attr("disabled", true);
+	$("#custom_year_selection_checkbox").on("change", function(event) {
+		if ($("#custom_year_selection_checkbox").attr("checked")) {
+			$("#custom_year_selection_value").attr("disabled", false);
+		} else {
+			$("#custom_year_selection_value").attr("disabled", true);
+		}
+	});
+
+	$(".browse").toggleClass("browse_off");
+  	
+	$(".browse").on("mouseover", function(event) {
+    		var target = event.target;
+    		console.log("Browse target mouseover");
+   		$("#" + target.id).toggleClass("browse_off");
+    		$("#" + target.id).toggleClass("browse_on");
+  	});
+
+  	$(".browse").on("mouseleave", function(event) {
+    		var target = event.target;
+    		console.log("Browse target mouseleave");
+    		$("#" + target.id).toggleClass("browse_off");
+    		$("#" + target.id).toggleClass("browse_on");
+  	});
+
+	$("#process_inputs").on("click", function(event) {
+		var fileReader = new FileReader();
+		for (var i = 0, f; f = allFiles[i]; i++) {
+			// We want to read an input file and generate averages for
+			// precipitation and temperature for each year.
+			// The input files contain temperature and precipitation 
+			// recordings for each day of each month beginning from one
+			// year and continuing on for successive years.	
+			// Each row in a file is a measurement for one day, is tab
+			// delimited and contains the following data:
+			// Year   Month   Day   Max Temperature in F  Min Temperature in F  Precipitation in centimeters
+			// The data is in the following format:
+			// <four digits>  <1 or 2 digits>  <1 or 2 digits>  <real valued number>  <real valued number>  <real valued number>
+			// The reader groups the data by year and calculates the average temperature and precipitation for a year and stores that data into an output file.  An output file is created for each station, era, and data type, where the station is the first parameter in filename name, the station is the data type is temperature or precipitation.
+			
+			fileReader.readAsText(f);
+			reader.onload = function() {
+				var text = reader.result;
+				var out = findOut(f.name);
+				processFile(text, out);
+			};
+			reader.onerror = function(e) {
+				console.log("Error: " + e);
+			};
+		}		
+	});	
+
+	function onFileSelect(event) {
+		$("#progress_parent").show();
+		$("#progress_indicator").attr("value", "0.0");
+		
+  		var files = event.target.files;
+  		var inc = 1.0 / files.length;
+		var total = 0.0;	
+	
+		for (var i = 0, f; f = files[i]; i++) {
+    			allFiles.push( {file: f, selected: true} );
+    			console.log("Selected file with name " + f.name);
+    			var fileName = f.name;
+    
+    			var fileType = f.type || "n/a";
+    			var fileSize = f.size;
+   	 		var fileModifiedDate = f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : "n/a";
+			var elementID = "input_file_" + i;
+    			var output = "<input type=\"checkbox\" checked=\"1\" id=\"" + elementID + "\" class=\"browse\"><strong>" + fileName + "</strong> (" + fileType + ") - " + fileSize + " bytes, last modified: " + fileModifiedDate + "<br></input>";
+    			allOutput.push(output);
+			total += inc;
+			$("#progress_indicator").attr("value", total);
+  		}
+
+  		document.getElementById("input_files").innerHTML = allOutput.join("");
+		//$("#progress_parent").hide();
+}
+	document.getElementById("files1").addEventListener("change", onFileSelect, false);
+
+
+	function readFile(f) {
+	}
+
+	function processFile(text, out) {
+
+	}
+
+	function findOut(fname) {
+		var params = breakoutParams(f.name);
+		console.log("File parameters: " + params);
+
+			
+	}
+
+	function breakoutParams(fname) {
+		var params = [];
+		var delimiter = ".";
+		var index1 = 0;
+		var index2 = fname.indexOf(delimiter);
+		for (var i = 0; i < 4; i++) {
+			params.push(fname.substring(index1, index2));
+			index1 = index2 + 1;
+			index2 = fname.indexOf(delimiter, index1);
+		}
+		return params;
+	}
+
+});
+</script>
+</head>
+
+<body>
+	<div data-role="page">
+    		<div id="header"></div>
+    		<div id="main_top" class="plot_top">
+			<div id="options" class="plot_options">
+				<div class="div_column">
+				<div class="div_row">
+					<label class="outer_left_field">Beginning Year:</label>
+					<input class="outer_right_field" type="number" min="1950" max="2100" multiple="" step="1" id="beginning_year" value="1950"/>
+				</div>
+				<div class="div_row">
+					<label class="outer_left_field">Ending Year:</label>
+					<input class="outer_right_field" type="number" min="1950" max="2100" multiple="" step="1" id="ending_year" value="2100"/>
+				</div>
+
+				<div class="div_row">
+					<input class="outer_left_field" type="checkbox" id="ten_year_selection_checkbox" checked="1"/>
+					<div class="outer_right_field">
+						<label class="outer_left_field">10</label>
+						<label class="outer_right_field">Years</label>
+					</div>
+				</div>
+				<div class="div_row">
+					<input class="outer_left_field" type="checkbox" id="twenty_year_selection_checkbox"/>
+					<div class="outer_right_field">
+						<label class="outer_left_field">20</label>
+						<label class="outer_right_field">Years</label>
+					</div>
+				</div>
+				<div class="div_row">
+					<input class="outer_left_field" type="checkbox" id="custom_year_selection_checkbox"/>
+					<div class="outer_right_field">
+						<input type="number" min="2" step="1" id="custom_year_selection_value" class="number_field" value="30"/>
+						<label class="outer_right_field">Years</label>
+					</div>
+				</div>
+
+				<div class="command_row">
+				<button id="process_inputs" class="command">Process Inputs</button>
+				</div>
+				<div class="command_row">
+				<button id="create_plots" class="command">Generate Plots</button>
+				</div>
+				</div>
+			</div>
+    			<div id="plot" class="plot_frame">
+				<p>Plot goes here</p>
+        		</div>
+        	</div>
+			<div id="main_bottom" class="plot_bottom">
+			<div id="inputs" class="plot_inputs" title="Input Files:">
+
+				<div>
+					<label class="header_text">Input Files:</label>
+					<input type="file" id="files1" name="files1[]" multiple=""/>
+				</div>
+				<div id="input_files" class="file_list">
+
+				</div>
+				<div id="progress_parent" class="progress_frame">
+					<progress id="progress_indicator" class="progress_indicator" max="1.0" value="0.0"/>
+				</div>
+			</div>
+			<div id="outputs" class="plot_outputs">
+				<div>
+					<label class="header_text">Output Files:</label>
+				<div id="output_files" class="file_list">
+				</div>
+			</div>
+
+    		</div>
+		<div id="footer"></div>
+    	</div>
+</body>
+</html>

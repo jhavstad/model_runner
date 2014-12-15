@@ -1,0 +1,61 @@
+# NOTE: May 21, 2014 - Version 0.1 Beta
+# NOTE: May 21, 2014 - Version 0.11 Beta - Fixed error where directory was not prepended to filename
+# NOTE: May 21, 2014 - Version 0.12 Beta - Added print outputs to indicate which files have been generated
+# NOTE: May 21, 2014 - Version 0.13 Beta - Removed prepended directory name if it is included
+# NOTE: May 21, 2014 - Version 0.14 Beta - Fixed directory listing on Windows, e.g. change '\' to '/' and replaced characters that may be confused as escape characters
+# NOTE: May 21, 2014 - Version 0.15 Beta - Made second paramter, delimiter, to method run_jobs a default parameter
+# NOTE: May 21, 2014 - Version 0.15a Beta - Added other common escape characters to look out for and added tabs to header output
+
+# NOTE: May 22, 2014 - Version 0.16 Beta - Added functionality to produce single files for a station for temperature and precipitation
+# NOTE: May 22, 2014 - Version 0.16 Beta - Added creation of output directory to send output files to
+# NOTE: May 22, 2014 - Remember the following: tr -d '\015' < batch_job_win.py > batch_job_unix.py - to replace CRLF EOL markers (win style) with LF EOLF markers (unix style)
+# NOTE: May 22, 2014 - Version 0.16a Beta - Changed method of verifying 'output' directory
+
+# NOTE: May 22, 2014 - Version 0.17 Beta - Added GUI elements - changed input parameters so that an output path may specified (or use default)
+
+# NOTE: May 27, 2014 - Version 0.18 Beta - Fixed issues related to outputting years in sequence and outputting files for different output
+# NOTE: May 27, 2014 - Version 0.18a Beta - Changed output to create only temperature and precipitation files for a station instead of multiple files per model (unless specified)
+
+# NOTE: May 27, 2014 - Version 0.19 Beta - Added functionality to select output by beginning and ending years - added functionality to GUI
+# NOTE: May 27, 2014 - Version 0.19a Beta - Minor bug fixes
+# NOTE: May 27 & 28, 2014 - Version 0.19b Beta - Minor bug fixes
+
+# NOTE: May 28, 2014 - Version 0.20 Beta - Changed GUI grid layout - changed program arguments to accept parameters for multiple runs - Using ttk GUI toolkit
+# NOTE: May 29, 2014 - Version 0.20a Beta - Fixed focus bugs - added threading component so that processing of files runs in parallel to the GUI
+# NOTE: May 29, 2014 - Version 0.20b Beta - Fixed bug that mistakenly placed wdigets into custom object instead of the main frame attribute
+
+# NOTE: Jun 2, 2014 - Version 0.21 Beta - Added additional job parameters, along with GUI, to capture user requirements to process 10 year, 20 year, and custom range of averages
+
+# NOTE: Jun 13, 2014 - Version 0.22 Beta - Changed output columns to include the runs and eras also
+
+# NOTE: Jun 24, 2014 - Version 0.23 Beta - Changed year output values to indicate that only an inclusive year range is used to calculate averages
+
+# NOTE: Jun 25, 2014 - Version 0.24 Beta - Added log file to receive output for debug information
+# NOTE: Jun 26, 2014 - Version 0.24a Beta - Added additional log file information
+
+# NOTE: Jun 26, 2014 - Version 0.25 Beta - Added message dialog to indicate that job has completed and asks the user if the job list should be cleared
+
+# NOTE: Jun 26, 2014 - Version 0.26 Beta - Added line graphs and pandas data frames
+# NOTE: Jun 27, 2014 - Version 0.27 Beta - Added Graphing GUI
+
+# NOTE: Jun 28, 2014 - Version 0.27a Beta - Additions to plots and plot GUI
+
+# NOTE: Jun 30, 2014 - Version 0.27b Beta - Additions to plots and plot GUI.  Modified main GUI to pop-up Plot GUI afterwards.
+
+# NOTE: Jul 1, 2014 - Version 0.27c Beta - Added mulithreading to plot creation task. Fixed bug on Windows associated with trying to create GUI components from outside the main thred
+
+# NOTE: Jul 2, 2014 - Version 0.27d Beta - Fixed bugs associated with graphs and related plotting data
+
+# NOTE: Jul 28, 2014 - Version 0.28 Beta - Changing ttk based widgets to PMW based widgets
+
+# NOTE: Aug 21, 2014 - Version 0.29 Beta - Adding DnD panel for choosing plots along with 'OK' and 'Cancel' buttons to confirm or close said DnD panel
+
+# NOTE: Sep 10, 2014 - Version 0.29 Beta - Added install script to program
+
+# NOTE: Sep 11, 2014 - Version 0.30 Beta - Fixed plot elements - Fixed bugs that cause errors when the plots are closed
+
+# NOTE: Sep 12, 2014 - Version 0.31 Beta - Fixed stack ordering of windows so that last window opened prior to opening to another shows up when the other closes - Fixed multiple bugs when new program jobs are created, removed, cancelled, etc. - Added log filename to bottom of plot window - Changed plot window to display not plots initially - Changed Plot Window so that it can be resized by the user
+
+# NOTE: Sep 23, 2014 - Version 0.32 Beta - Added MyPmwBase.py and MyPmwScrolledFrame.py to local project so that the module Pmw does not need to be installed on other hosts
+
+# NOTE: Oct 1, 2014 - Version 0.33 Beta - Removed limitations to lengths of Station, Model, and Run names - Will also remove '-' and '_', in addition to ' ', from the Station Name so that 'Station X', 'Station-X', and 'Station_X' are all the same
