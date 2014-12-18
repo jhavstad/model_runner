@@ -1,5 +1,19 @@
 Installation:
 
-Windows user must download and install the latest version for Pandas and Numpy.  They can be found at:
-Pandas v0.14.0: https://pypi.python.org/pypi/pandas/0.14.0/#downloads
-Numpy v1.8.1 http://sourceforge.net/projects/numpy/files/
+Windows users must download and install the latest versions for Pandas, Numpy, and GGPlot.  They can be found at:
+
+Pandas v0.15.2: https://pypi.python.org/pypi/pandas#downloads
+Numpy  v1.9.1:  http://sourceforge.net/projects/numpy/files/NumPy/1.9.1/
+GGPlot v0.6.5:  https://pypi.python.org/pypi/ggplot#downloads
+
+Mac OSX users can install the packages using Macports or Homebrew.
+
+Linux users can use apt-get on Debian distributions or yum on RedHat distributions.
+
+Also, there are two GUI versions, one using Tkinter and the other using QT4.
+Tkinter should be installed with Python by default.  
+
+Windows users (as well as Mac OSX and Linux users) may download PyQt4 from:
+http://www.riverbankcomputing.com/software/pyqt/download
+
+Alernatively, an install script for Mac OSX and Linux, model_runner_dep_ez_setup.py, is available to automatically install the required packages.  Windows users may run the Install.bat program to install the required packages.

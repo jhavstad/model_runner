@@ -59,3 +59,5 @@
 # NOTE: Sep 23, 2014 - Version 0.32 Beta - Added MyPmwBase.py and MyPmwScrolledFrame.py to local project so that the module Pmw does not need to be installed on other hosts
 
 # NOTE: Oct 1, 2014 - Version 0.33 Beta - Removed limitations to lengths of Station, Model, and Run names - Will also remove '-' and '_', in addition to ' ', from the Station Name so that 'Station X', 'Station-X', and 'Station_X' are all the same
+
+# NOTE: Dec 18, 2014 - Version 0.34 Beta - Fixed bug that took the year difference as an included value in the temp vs. precip scatter plot, skewing the resulting graph

@@ -83,7 +83,7 @@ def create_dataframes(filename, datatype, log):
     df_closest_fit = None
     try:
         # Read a tab delimited file.
-        df = pd.read_table(filename)
+        df = pd.read_table(filename, engine='c', lineterminator='\n', na_values=[''])
 
         # NOTE: This merges historic with future, but this is likely uncessary and may even be wrong.
         # However, this done merely for convenience.  Please remember to adjust this later.  It will still
@@ -202,7 +202,7 @@ def create_line_plot(plot_title, y_label, df, log, value_vars=list()):
 
     return fig
 
-def get_range_values(dframe1, dframe2, min_index_value, max_index_value, index_column):
+def get_range_values((dframe1, dframe2), min_index_value, max_index_value, index_column):
     '''
     This method retrieves the values within a range between min_index_value and max_index_value indexed by index_key.
     The range is searched first in the dframe1 data frame, then in both dframe1 and dframe2, and then in dframe2.
@@ -210,6 +210,9 @@ def get_range_values(dframe1, dframe2, min_index_value, max_index_value, index_c
     be less than zero because the values at the maximum index may be less than the values at the minimum index.
     '''
 
+    # The following lines are to determine if a frame is null or not.
+    # The pandas library does not equate a data frame with None unless
+    # it is actually none.  Hence, the try...except block
     dframe1_is_none = False
     try:
         if dframe1 == None:
@@ -309,7 +312,7 @@ def get_range_values(dframe1, dframe2, min_index_value, max_index_value, index_c
         pass
     if not lower_bound_values_is_none and not upper_bound_values_is_none:
         diff_values = pd.DataFrame(np.ones((1, len(upper_bound_values.columns))), columns=upper_bound_values.columns)
-        for col in diff_values.columns:
+        for col in diff_values.columns - [index_column]:
             if col in lower_bound_values.columns:
                 diff_values[col] = float(upper_bound_values[col]) - float(lower_bound_values[col])
 
@@ -405,17 +408,15 @@ def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent
 
     # Plot a bounding rectangle that defines the maximum and minimum differences, excluding the extreme values.
     plot += geom_rect(aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, fill='#ff0000', alpha=0.005))
-    plot += geom_line(aes(x=xmin, ymin=ymin, ymax=ymax, linestye='-'))
-    plot += geom_line(aes(x=xmax, ymin=ymin, ymax=ymax, linestyle='-'))
-    plot += geom_line(aes(xmin=xmin, xmax=xmax, y=ymin, linestyle='|'))
-    plot += geom_line(aes(xmin=xmin, xmax=xmax, y=ymax, linestyle='|'))
-
-    print(str(df_data))
+    plot += geom_vline(aes(x=xmin, ymin=ymin, ymax=ymax, linetype='solid'))
+    plot += geom_vline(aes(x=xmax, ymin=ymin, ymax=ymax, linetype='solid'))
+    plot += geom_hline(aes(xmin=xmin, xmax=xmax, y=ymin, linetype='solid'))
+    plot += geom_hline(aes(xmin=xmin, xmax=xmax, y=ymax, linetype='solid'))
 
     # Set up plot details
     plot += ggtitle(plot_title)
     plot += xlab(x_column + ' Farenheit')
-    plot += ylab(y_column + ' Inches')
+    plot += ylab(y_column + ' Centimeters')
 
     fig = plot.draw()
 

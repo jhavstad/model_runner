@@ -64,7 +64,9 @@
 
 # NOTE: Oct 1, 2014 - Version 0.33 Beta - Removed limitations to lengths of Station, Model, and Run names - Will also remove '-' and '_', in addition to ' ', from the Station Name so that 'Station X', 'Station-X', and 'Station_X' are all the same
 
-__VERSION__ = '0.33 Beta'
+# NOTE: Dec 18, 2014 - Version 0.34 Beta - Fixed bug that took the year difference as an included value in the temp vs. precip scatter plot, skewing the resulting graph
+
+__VERSION__ = '0.34 Beta'
 
 # Matplotlib, and by extension ggplot, automatically generate GUIs which conflict with the GUI implementation
 # defined here.  So, we need to "suppress" this inclination via the following statements.
