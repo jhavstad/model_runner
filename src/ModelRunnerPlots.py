@@ -202,7 +202,7 @@ def create_line_plot(plot_title, y_label, df, log, value_vars=list()):
 
     return fig
 
-def get_range_values((dframe1, dframe2), min_index_value, max_index_value, index_column):
+def get_range_values(dframe, min_index_value1, max_index_value1, min_index_value2, max_index_value2, index_column):
     '''
     This method retrieves the values within a range between min_index_value and max_index_value indexed by index_key.
     The range is searched first in the dframe1 data frame, then in both dframe1 and dframe2, and then in dframe2.
@@ -213,108 +213,38 @@ def get_range_values((dframe1, dframe2), min_index_value, max_index_value, index
     # The following lines are to determine if a frame is null or not.
     # The pandas library does not equate a data frame with None unless
     # it is actually none.  Hence, the try...except block
-    dframe1_is_none = False
+    dframe_is_none = False
     try:
-        if dframe1 == None:
-            dframe1_is_none = True
-    except:
-        pass
-
-    dframe2_is_none = False
-    try:
-        if dframe2 == None:
-            dframe2_is_none = True
+        if dframe == None:
+            dframe_is_none = True
     except:
         pass
 
     # If the minimum values is greater than the maximum value then swap the two.
-    if min_index_value > max_index_value:
-        temp = min_index_value
-        min_index_value = max_index_value
-        max_index_value = temp
+    if min_index_value1 > max_index_value1:
+        temp = min_index_value1
+        min_index_value1 = max_index_value1
+        max_index_value1 = temp
 
-    # Attempt to find the min and max values in the first data frame.
-    df1_lower_bound_values = None
-    df1_upper_bound_values = None
-    if not dframe1_is_none:
-        df1_lower_bound_values = dframe1[dframe1[index_column] == min_index_value] if index_column in dframe1 else None
-        df1_upper_bound_values = dframe1[dframe1[index_column] == max_index_value] if index_column in dframe1 else None
+    if min_index_value2 > max_index_value2:
+	temp = min_index_value2
+	min_index_value2 = max_index_value2
+	max_index_value2 = temp
 
-    # Attempt to find the min an max values in the second data frame.
-    df2_lower_bound_values = None
-    df2_upper_bound_values = None
-    if not dframe2_is_none:
-        df2_lower_bound_values = dframe2[dframe2[index_column] == min_index_value] if index_column in dframe2 else None
-        df2_upper_bound_values = dframe2[dframe2[index_column] == max_index_value] if index_column in dframe2 else None
-
-    df1_lower_bound_values_is_none = False
-    try:
-        if df1_lower_bound_values == None:
-            df1_lower_bound_values_is_none = True
-    except:
-        pass
-
-
-    df2_lower_bound_values_is_none = False
-    try:
-        if df2_lower_bound_values == None:
-            df2_lower_bound_values_is_none = True
-    except:
-        pass
-
-    # Determine which frame, if any, has the minimum values, with the preference for the first frame
-    lower_bound_values = None
-    if not df1_lower_bound_values_is_none and len(df1_lower_bound_values) > 0:
-        lower_bound_values = df1_lower_bound_values
-    elif not df2_lower_bound_values_is_none and len(df2_lower_bound_values) > 0:
-        lower_bound_values = df2_lower_bound_values
-    else:
-        # There are no values found with respect to the requested minimum value.
-        lower_bound_values = None
-
-    df1_upper_bound_values_is_none = False
-    try:
-        if df1_upper_bound_values == None:
-            df1_upper_bound_values_is_none = True
-    except:
-        pass
-
-    df2_upper_bound_values_is_none = False
-    try:
-        if df2_upper_bound_values == None:
-            df2_upper_bound_values_is_none = True
-    except:
-        pass
-
-    # Determine which frame, if any, has the maximum values, with the preference for the second frame
-    upper_bound_values = None
-    if not df1_upper_bound_values_is_none and len(df1_upper_bound_values) > 0:
-        upper_bound_values = df1_upper_bound_values
-    elif not df2_upper_bound_values_is_none and len(df2_upper_bound_values) > 0:
-        upper_bound_values = df2_upper_bound_values
-    else:
-        # There are no values found with respect to the request maximum value.
-        upper_bound_values = None
-
-    # Attempt to produce the difference values within the range of minimum and maximum values.
-    diff_values = None
-    lower_bound_values_is_none = False
-    upper_bound_values_is_none = False
-    try:
-        if lower_bound_values == None:
-            lower_bound_values_is_none = True
-    except:
-        pass
-    try:
-        if upper_bound_values == None:
-            upper_bound_values_is_none = True
-    except:
-        pass
-    if not lower_bound_values_is_none and not upper_bound_values_is_none:
-        diff_values = pd.DataFrame(np.ones((1, len(upper_bound_values.columns))), columns=upper_bound_values.columns)
+    # Attempt to find the min and max values in the first data range.
+    if not dframe_is_none:
+	df1_values = dframe[dframe[index_column] >= min_index_value1]
+	df1_values = dframe[dframe[index_column] <= max_index_value1]
+	upper_bound_values = df1_values.mean()
+	#print(str(df1_mean_values))
+    # Attempt to find the min an max values in the second data range.
+	df2_values = dframe[dframe[index_column] >= min_index_value2]
+	df2_values = dframe[dframe[index_column] <= max_index_value2]
+    	lower_bound_values = df2_values.mean()
+	#print(str(df2_mean_values))
+        diff_values = pd.DataFrame(np.ones((1, len(dframe.columns))), columns=dframe.columns)
         for col in diff_values.columns - [index_column]:
-            if col in lower_bound_values.columns:
-                diff_values[col] = float(upper_bound_values[col]) - float(lower_bound_values[col])
+            diff_values[col] = float(upper_bound_values[col]) - float(lower_bound_values[col])
 
     return diff_values
 
@@ -344,7 +274,7 @@ def get_values_without_extremes(df, x_percent, index_column):
 
     return df
 
-def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent, min_year, max_year):
+def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent, min_year1, max_year1, min_year2, max_year2):
     '''
     This creates a temperature vs. percipitation plot, with extreme values that fall outside the percentile range
     replaced with the mean values of the respective columns.  The values of the plot are derived by taking the difference
@@ -355,8 +285,8 @@ def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent
 
     year_column = 'year'
 
-    df_temp_diff = get_range_values((df_temp, None), min_year, max_year, index_column=year_column)
-    df_precip_diff = get_range_values((df_precip, None), min_year, max_year, index_column=year_column)
+    df_temp_diff = get_range_values(df_temp, min_year1, max_year1, min_year2, max_year2, index_column=year_column)
+    df_precip_diff = get_range_values(df_precip, min_year1, max_year1, min_year2, max_year2, index_column=year_column)
 
     # Ensure that the values are legitimate
     df_temp_is_none = False
@@ -379,14 +309,17 @@ def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent
     df_temp_without_extremes = get_values_without_extremes(df_temp_diff, x_percent, index_column=year_column)
     df_precip_without_extremes = get_values_without_extremes(df_precip_diff, x_percent, index_column=year_column)
 
+    print('Temp diffs: ' + str(df_temp_without_extremes))
+    print('Precip diffs: ' + str(df_precip_without_extremes))
+
     data_columns = df_temp_without_extremes.columns - [year_column]
     data_rows = list()
     for col in data_columns:
-        row = [col, df_temp_without_extremes[col][0], df_precip_without_extremes[col][0]]
+        row = [col, df_temp_diff[col][0], df_precip_diff[col][0]]
         data_rows.append(row)
 
     # Add the median point
-    data_rows.append(['median', df_temp_without_extremes.median().median(), df_precip_without_extremes.median().median()])
+    data_rows.append(['median', df_temp_diff.median().median(), df_precip_diff.median().median()])
 
     x_column = 'Temperature'
     y_column = 'Precipitation'
@@ -406,6 +339,8 @@ def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent
     ymax = df_precip_without_extremes.max().max()
     ymin = df_precip_without_extremes.min().min()
 
+    print('xmin: ' + str(xmin) + ' xmax: ' + str(xmax) + ' ymin: ' + str(ymin) + ' ymax: ' + str(ymax))
+
     # Plot a bounding rectangle that defines the maximum and minimum differences, excluding the extreme values.
     plot += geom_rect(aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, fill='#ff0000', alpha=0.005))
     plot += geom_vline(aes(x=xmin, ymin=ymin, ymax=ymax, linetype='solid'))
@@ -416,7 +351,7 @@ def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent
     # Set up plot details
     plot += ggtitle(plot_title)
     plot += xlab(x_column + ' Farenheit')
-    plot += ylab(y_column + ' Centimeters')
+    plot += ylab(y_column + ' Millimeters')
 
     fig = plot.draw()
 

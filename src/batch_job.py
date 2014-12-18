@@ -260,7 +260,7 @@ def create_station_name(station):
     station_name = station.translate(string.maketrans("",""), ' ')
     station_name = station_name.translate(string.maketrans("",""), '_')
     station_name = station_name.translate(string.maketrans("",""), '-')
-    print 'Station name: ' + str(station_name)
+    #print 'Station name: ' + str(station_name)
     #station_name = station_name[0:7]
 
     return station_name
