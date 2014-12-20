@@ -5,6 +5,97 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+def get_model(name):
+    try:
+        return name[0:name.index('_')]
+    except:
+        pass
+    return name
+
+def get_era(name):
+    try:
+        firstIndex = name.index('_')
+        return name[firstIndex+1:name.index('_', firstIndex+1)]
+    except:
+        pass
+    return name
+
+def get_col_intersection(df1, df2):
+    df1_columns = df1.columns
+    df2_columns = df2.columns
+    intersection_columns = df1_columns
+    for col in intersection_columns:
+        if col not in df2_columns:
+            intersection_columns.remove(col)
+    return intersection_columns
+
+def get_model_diffs(df1, df2, historic_start_year, historic_end_year, future_start_year, future_end_year, index_column):
+    '''
+    This function is really just an effort to organize the incoming data frames
+    into a format so that the historic value range can be subtracted from the
+    the future value range.  This function will take the mean of the values 
+    within each range, subtract them and return the result.  It will return
+    the result for both data frames.  The input data frames represent the
+    X and Y plot axes respectiviely. 
+    The output will be a dictionary with elements in an np.array format, 
+    with one array for each one.
+    '''
+    # Attempt to get the columns that are common between the two data frames. 
+    intersection_columns = get_col_intersection(df1, df2)
+  
+    # Create a listing of all the models that are common between the two data
+    # frames (provided above) and then filter out those that do not have 
+    # both a future and historic values.
+
+    models = dict()
+    historic_value = 'historical'
+    historic_key = 'historic'
+    future_key = 'future'
+    for col in intersection_columns:
+        model = get_model(col)
+        era = get_era(col)
+        if model not in models:
+            models[model] = dict()
+        #print("era: " + era)
+        if era == historic_value:
+            models[model][historic_key] = col
+        else:
+            models[model][future_key] = col
+
+    # Return the differences between the historic and future values
+    # for the two data frames. 
+    df1_diffs = _get_model_diffs(df1, models, historic_start_year, historic_end_year, future_start_year, future_end_year, historic_value, historic_key, future_key, index_column)
+
+    df2_diffs = _get_model_diffs(df2, models, historic_start_year, historic_end_year, future_start_year, future_end_year, historic_value, historic_key, future_key, index_column)
+
+    return (df1_diffs, df2_diffs)
+
+def _get_model_diffs(df, models, historic_start_year, historic_end_year, future_start_year, future_end_year, historic_value, historic_key, future_key, index_column):
+    #print("Retrieving values for data frame: " + str(models))
+    #print("Historic interval (years): " + str(historic_end_year - historic_start_year))
+    #print("Future interval (years): " + str(future_end_year - future_start_year))
+    
+    output = dict()
+    for model in models:
+        #print("Model in models: " + str(models[model]))
+        if historic_key in models[model] and future_key in models[model]:
+	    #print("Calculating difference for model: " + model);
+	    df_historic = models[model][historic_key]
+            df_future = models[model][future_key]
+            df_historic = df[df_historic]
+            df_future = df[df_future]
+            df_historic = df_historic[df[index_column] >= historic_start_year]
+            df_historic = df_historic[df[index_column] <= historic_end_year]
+            df_future = df_future[df[index_column] >= future_start_year]
+            df_future = df_future[df[index_column] <= future_end_year]
+            df_historic_values = df_historic.values.flatten()
+            df_future_values = df_future.values.flatten()
+	    #print(str(len(df_future_values)))
+	    #print(str(len(df_historic_values)))
+            output[model] = df_future_values - df_historic_values
+
+    return output    
+
 def get_model_sub_strings(column):
     sub1 = column[0: column.index('_')]
     sub2 = column[column.rindex('_')+1:len(column)]
@@ -129,7 +220,7 @@ def find_avg_dataframe(df, log=None, value_vars=list()):
     return pd.DataFrame(), pd.DataFrame()
 
 def get_avg_plot(plot_title, y_label, df, log):
-    print('Creating plot for just average dataframe.')
+    #print('Creating plot for just average dataframe.')
     df_avg, df_lng = find_avg_dataframe(df, None)
     if len(df_avg) == 0:
         print('Could not find average dataframe!')
@@ -202,6 +293,7 @@ def create_line_plot(plot_title, y_label, df, log, value_vars=list()):
 
     return fig
 
+# NOTE: This is deprecated
 def get_range_values(dframe, min_index_value1, max_index_value1, min_index_value2, max_index_value2, index_column):
     '''
     This method retrieves the values within a range between min_index_value and max_index_value indexed by index_key.
@@ -247,7 +339,43 @@ def get_range_values(dframe, min_index_value1, max_index_value1, min_index_value
             diff_values[col] = float(upper_bound_values[col]) - float(lower_bound_values[col])
 
     return diff_values
+    
+def get_data_without_extremes(data, percent):
+    if percent > 0.5:
+        return None
 
+    data_without_extremes = dict()
+    for model in data:
+	#print("Reading model " + model)
+    	index_min = int(round(float(len(data[model])) * percent)) - 1
+        index_max = len(data[model]) - index_min
+	#print("Index min: " + str(index_min))
+	#print("Index max: " + str(index_max))
+        values_array = np.array(data[model])
+        values_array.sort()
+        cutoff_min = values_array[index_min]
+        cutoff_max = values_array[index_max]
+	#print("Cutoff min: " + str(cutoff_min))
+	#print("Cutoff max: " + str(cutoff_max))
+	data_without_extremes[model] = data[model].copy()
+	# This is an exclusive interval at or below the min_index, or
+	# anything at or above the max_index is excluded
+	data_model_mean = data[model].mean()
+	#print("The model mean is: " + str(data_model_mean))
+        for i in range(len(data[model])):
+            if data[model][i] < cutoff_min:
+		#print("Found a value at the minimum cutoff value")
+                data_without_extremes[model][i] = data_model_mean
+		#print("Value at index " + str(i) + " is " + str(data_without_extremes[model][i]))
+		#print("Original value is " + str(data[model][i]))
+            if data[model][i] > cutoff_max:
+		#print("Found a value at the maximum cutoff value")
+                data_without_extremes[model][i] = data_model_mean
+		#print("Value at index " + str(i) + " is " + str(data_without_extremes[model][i]))
+		#print("Original value is " + str(data[model][i]))
+    return data_without_extremes
+
+# This function is deprecated
 def get_values_without_extremes(df, x_percent, index_column):
     '''
     This searches through a data frame and removes those values that above and below the specified percentage.
@@ -273,6 +401,102 @@ def get_values_without_extremes(df, x_percent, index_column):
         df[col] = df[col].replace(df[col][df[col] > cutoff_max], df[col].mean())
 
     return df
+
+def create_temp_vs_precip_scatter_plot_rev(plot_title, df_temp, df_precip, x_percent, historic_start_year, historic_end_year, future_start_year, future_end_year):
+    '''
+    This creates a temperature vs. percipitation plot, with extreme values that fall outside the percentile range
+    replaced with the mean values of the respective columns.  The values of the plot are derived by taking the difference
+    of the values between the min_year and max_year.
+    Note, the temperature and precipation data frames are the resulting input from a temperature and a precipitation
+    file respectively.
+    '''
+
+    year_column = 'year'
+
+    temp_diffs, precip_diffs = get_model_diffs(df_temp, df_precip, historic_start_year, historic_end_year, future_start_year, future_end_year, year_column)
+
+    temp_diffs_without_extremes = get_data_without_extremes(temp_diffs, x_percent)
+    precip_diffs_without_extremes = get_data_without_extremes(precip_diffs, x_percent)
+    
+    data_rows = list()
+    model_medians = [np.ones(len(temp_diffs)), np.ones(len(precip_diffs))]
+    model_index = 0
+    for model in temp_diffs:
+        # So the calculation should be for all the years for all the models
+        # The current calculation is taking the average
+    	median_index = round(float(len(temp_diffs[model])) / 2.0)
+        row = [model, temp_diffs[model].mean(), precip_diffs[model].mean()]
+        print("Row: " + str(row))
+        data_rows.append(row)
+	temp_median = temp_diffs[model][median_index]
+        precip_median = precip_diffs[model][median_index]
+      
+        model_medians[0][model_index] = temp_median
+        model_medians[1][model_index] = precip_median
+        model_index += 1
+
+    median_index = round(float(len(temp_diffs)) / 2.0)
+    model_medians[0].sort()
+    model_medians[1].sort()
+    
+    data_rows.append(['median', model_medians[0][median_index], model_medians[1][median_index]])
+    
+    x_column = 'Temperature'
+    y_column = 'Precipitation'
+    color_column = 'Model'
+
+    df_data = pd.DataFrame(data_rows, columns=[color_column, x_column, y_column])
+
+    plot = ggplot(aes(x=x_column, y=y_column, color=color_column), data=df_data)
+
+    plot += geom_point()
+
+    xmax = None
+    xmin = None
+    ymax = None
+    ymin = None
+
+    for model in temp_diffs_without_extremes:
+        temp_values_sorted = temp_diffs_without_extremes[model]
+        precip_values_sorted = precip_diffs_without_extremes[model]
+	temp_values_sorted.sort()
+	precip_values_sorted.sort()
+        first_index = 0
+        last_index = len(temp_values_sorted) - 1
+        
+        if xmax == None or xmax < temp_values_sorted[last_index]:
+            xmax = temp_values_sorted[last_index]
+
+        if xmin == None or xmin < temp_values_sorted[first_index]:
+            xmin = temp_values_sorted[first_index]
+
+        if ymax == None or ymax < precip_values_sorted[last_index]:
+            ymax = precip_values_sorted[last_index]
+
+        if ymin == None or ymin < precip_values_sorted[last_index]:
+            ymin = precip_values_sorted[first_index]
+
+    print("Median temp: " + str(model_medians[0][median_index]))
+    print("Median precip: " + str(model_medians[1][median_index]))
+    print("Min temp: " + str(xmin))
+    print("Max temp: " + str(xmax))
+    print("Min precip: " + str(ymin))
+    print("Max precip: " + str(ymax))
+            
+    plot += geom_rect(aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, fill='#ff0000', alpha=0.005))
+    plot += geom_vline(aes(x=xmin, ymin=ymin, ymax=ymax, linetype='solid'))
+    plot += geom_vline(aes(x=xmax, ymin=ymin, ymax=ymax, linetype='solid'))
+    plot += geom_hline(aes(xmin=xmin, xmax=xmax, y=ymin, linetype='solid'))
+    plot += geom_hline(aes(xmin=xmin, xmax=xmax, y=ymax, linetype='solid'))
+
+    # Set up plot details
+    plot += ggtitle(plot_title)
+    plot += xlab(x_column + ' Farenheit')
+    plot += ylab(y_column + ' Millimeters')
+
+    fig = plot.draw()
+
+    return fig
 
 def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent, min_year1, max_year1, min_year2, max_year2):
     '''
@@ -309,8 +533,8 @@ def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent
     df_temp_without_extremes = get_values_without_extremes(df_temp_diff, x_percent, index_column=year_column)
     df_precip_without_extremes = get_values_without_extremes(df_precip_diff, x_percent, index_column=year_column)
 
-    print('Temp diffs: ' + str(df_temp_without_extremes))
-    print('Precip diffs: ' + str(df_precip_without_extremes))
+    #print('Temp diffs: ' + str(df_temp_without_extremes))
+    #print('Precip diffs: ' + str(df_precip_without_extremes))
 
     data_columns = df_temp_without_extremes.columns - [year_column]
     data_rows = list()
@@ -339,7 +563,7 @@ def create_temp_vs_precip_scatter_plot(plot_title, df_temp, df_precip, x_percent
     ymax = df_precip_without_extremes.max().max()
     ymin = df_precip_without_extremes.min().min()
 
-    print('xmin: ' + str(xmin) + ' xmax: ' + str(xmax) + ' ymin: ' + str(ymin) + ' ymax: ' + str(ymax))
+    #print('xmin: ' + str(xmin) + ' xmax: ' + str(xmax) + ' ymin: ' + str(ymin) + ' ymax: ' + str(ymax))
 
     # Plot a bounding rectangle that defines the maximum and minimum differences, excluding the extreme values.
     plot += geom_rect(aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, fill='#ff0000', alpha=0.005))
