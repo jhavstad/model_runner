@@ -1,14 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1">
 <title>Model Runner</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.
-js"></script>
-<script src="js/flot/jquery.flot.js.txt"></script>
-<script src="js/model_runner.js"></script>
-<script src=""></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/dojo.js" data-dojo-config="parseOnLoad: true, isDebug: true"></script>
+
+<script src="http://"></script>
 <style>
 	*
 	{
@@ -55,11 +54,12 @@ js"></script>
 		width: 48%;
 		margin-top: 2px;
 		margin-bottom: 2px;
+		overflow: scroll;
+		height: 100px;
 	}
 
 	.plot_inputs
 	{
-		height: 40%;
 		background: #ffffff;
 		float: left;
 		background: #ececec;
@@ -67,7 +67,6 @@ js"></script>
 
 	.plot_outputs
 	{
-		height: 40%;
 		background: #ffffff;
 		float: right;
 		background: #ececec;
@@ -114,6 +113,7 @@ js"></script>
 		float: left;
 		margin-left: 4px;
 		font-size: 10pt;
+		height: 40%;
 	}
 
 	.outer_left_field, .outer_right_field, .number_field
@@ -163,13 +163,25 @@ js"></script>
 
 </style>
 <script>
-$(document).ready(function() {
+require([
+            'dojo/dom',
+            'dojo/dom-construct',
+	    'dojo/_base/xhr',
+	    'dojo/_base/window',
+	    'dojox/mobile',
+	    'dojox/mobile/parser',
+	    'dojox/mobile/ProgressIndicator',
+	    'dojox/mobile/Rating',
+	    'dojox/mobile/TabBar',
+	    'dojo/dom-style'
+        ], function (dom, domConstruct, xhr, win, mobile, parser, ProgressIndicator, Rating, TabBar, domStyle) {
 	//test_plot();
 	var allFiles = [];
 	var allOutput = [];
 
-	//$("#progress_indicator").show();
-	$("#progress_parent").hide();
+	var prog = ProgressIndicator.getInstance({center: true});
+	dom.byId("input_files").appendChild(prog.domNode);
+	prog.start();
 
 	$("#custom_year_selection_value").attr("disabled", true);
 	$("#custom_year_selection_checkbox").on("change", function(event) {
@@ -180,24 +192,13 @@ $(document).ready(function() {
 		}
 	});
 
-	$(".browse").toggleClass("browse_off");
-  	
-	$(".browse").on("mouseover", function(event) {
-    		var target = event.target;
-    		console.log("Browse target mouseover");
-   		$("#" + target.id).toggleClass("browse_off");
-    		$("#" + target.id).toggleClass("browse_on");
-  	});
-
-  	$(".browse").on("mouseleave", function(event) {
-    		var target = event.target;
-    		console.log("Browse target mouseleave");
-    		$("#" + target.id).toggleClass("browse_off");
-    		$("#" + target.id).toggleClass("browse_on");
-  	});
+	function onInputSelected(event) {
+		console.log("Selected file: " + event.target.id);
+	}
 
 	$("#process_inputs").on("click", function(event) {
 		var fileReader = new FileReader();
+		
 		for (var i = 0, f; f = allFiles[i]; i++) {
 			// We want to read an input file and generate averages for
 			// precipitation and temperature for each year.
@@ -210,60 +211,128 @@ $(document).ready(function() {
 			// The data is in the following format:
 			// <four digits>  <1 or 2 digits>  <1 or 2 digits>  <real valued number>  <real valued number>  <real valued number>
 			// The reader groups the data by year and calculates the average temperature and precipitation for a year and stores that data into an output file.  An output file is created for each station, era, and data type, where the station is the first parameter in filename name, the station is the data type is temperature or precipitation.
-			
-			fileReader.readAsText(f);
-			reader.onload = function() {
-				var text = reader.result;
-				var out = findOut(f.name);
-				processFile(text, out);
-			};
-			reader.onerror = function(e) {
-				console.log("Error: " + e);
-			};
-		}		
-	});	
+			if (f.selected) {
+				var file = f.file;	
+ 				fileReader.readAsText(file);
+				fileReader.onload = function() {
+					var text = fileReader.result;
+					var out = findOut(file);
+					processFile(text, out);
+				};
+				fileReader.onerror = function(e) {
+					console.log("Error: " + e);
+				};
+			}
+		}
+				
+	});
+
+	function inArray(arr, value) {
+		console.log("Searching for value: " + value.file.name);
+		for (var i = 0; i < arr.length; i++) {
+			console.log("Examing value: " + arr[i].file.name);
+			if (arr[i].file.name == value.file.name) {
+				return true;
+			}
+		}
+		return false;
+	}	
 
 	function onFileSelect(event) {
-		$("#progress_parent").show();
-		$("#progress_indicator").attr("value", "0.0");
 		
   		var files = event.target.files;
   		var inc = 1.0 / files.length;
 		var total = 0.0;	
-	
+		var currentAllOutputLength = allOutput.length;
+
+		
+		prog.start();
+
+		var rotate = 0;
+		var rotateInc = 10;
+
 		for (var i = 0, f; f = files[i]; i++) {
-    			allFiles.push( {file: f, selected: true} );
-    			console.log("Selected file with name " + f.name);
-    			var fileName = f.name;
-    
-    			var fileType = f.type || "n/a";
-    			var fileSize = f.size;
-   	 		var fileModifiedDate = f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : "n/a";
-			var elementID = "input_file_" + i;
-    			var output = "<input type=\"checkbox\" checked=\"1\" id=\"" + elementID + "\" class=\"browse\"><strong>" + fileName + "</strong> (" + fileType + ") - " + fileSize + " bytes, last modified: " + fileModifiedDate + "<br></input>";
-    			allOutput.push(output);
-			total += inc;
-			$("#progress_indicator").attr("value", total);
+			rotate += rotateInc;
+			//domStyle.set(prog.domNode, "transform", "rotate(+" + rotate + "deg)");
+			var element = {file: f, selected: true};
+			console.log("Selected file with name " + f.name);
+    			if (!inArray(allFiles, element)) {
+    			
+    			    var fileName = f.name;
+    			    allFiles.push(element);
+    			    var fileType = f.type || "n/a";
+    			    var fileSize = f.size;
+   	 		    var fileModifiedDate = f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : "n/a";
+			    var elementIndex = i + currentAllOutputLength;
+			    var elementID = "input_file_" + elementIndex;
+    			    var output = "<input type=\"checkbox\" checked=\"1\" id=\"" + elementID + "\" class=\"browse\"><strong>" + fileName + "</strong> (" + fileType + ") - " + fileSize + " bytes, last modified: " + fileModifiedDate + "<br></input>";
+    			    allOutput.push(output);
+			    total += inc;
+			}
   		}
+		//prog.stop();
 
-  		document.getElementById("input_files").innerHTML = allOutput.join("");
-		//$("#progress_parent").hide();
-}
+  		//document.getElementById("input_files").innerHTML = allOutput.join("");
+		//var browseElements = document.getElementsByClassName("browse");
+	  	//for (var i = 0; i < browseElements.length; i++) {
+			//console.log("Changing element " + i);
+			//browseElements[i].addEventListener("change", onInputSelected, false); 
+		//}
+
+		$(".browse").toggleClass("browse_off");
+  	
+		$(".browse").on("mouseover", function(event) {
+    			var target = event.target;
+    			console.log("Browse target mouseover");
+   			$("#" + target.id).toggleClass("browse_off");
+    			$("#" + target.id).toggleClass("browse_on");
+  		});
+
+  		$(".browse").on("mouseleave", function(event) {
+    			var target = event.target;
+    			console.log("Browse target mouseleave");
+    			$("#" + target.id).toggleClass("browse_off");
+    			$("#" + target.id).toggleClass("browse_on");
+  		});
+
+		$(".browse").on("change", function(event) {
+			console.log("Selected file: " + event.target.id);
+			var targetID = event.target.id;
+			var arr_index_start = targetID.lastIndexOf("_") + 1;
+			var arr_index_end = targetID.length;
+			var arr_index_length = arr_index_end - arr_index_start;
+			var arr_index = targetID.substr(arr_index_start, arr_index_length);
+			console.log("Index of file object: " + arr_index);
+		});	
+	}
+
 	document.getElementById("files1").addEventListener("change", onFileSelect, false);
-
 
 	function readFile(f) {
 	}
 
-	function processFile(text, out) {
-
+	function getLine(text, startIndex) {
+		var endIndex = text.indexOf('\n', startIndex);
+		return endIndex;
 	}
 
-	function findOut(fname) {
-		var params = breakoutParams(f.name);
+	function processFile(text, out) {
+		var startIndex = 0;
+		var endIndex = getLine(text, startIndex);
+		while (endIndex != -1) {
+			line = text.substr(startIndex, endIndex);
+			console.log("Read line: " + line);
+			startIndex = endIndex+1;
+			endIndex = getLine(text, startIndex);
+			
+		}
+	}
+
+	function findOut(file) {
+		var params = breakoutParams(file.name);
 		console.log("File parameters: " + params);
 
-			
+		return params;	
 	}
 
 	function breakoutParams(fname) {
@@ -279,6 +348,8 @@ $(document).ready(function() {
 		return params;
 	}
 
+	
+
 });
 </script>
 </head>
@@ -286,6 +357,8 @@ $(document).ready(function() {
 <body>
 	<div data-role="page">
     		<div id="header"></div>
+		
+		
     		<div id="main_top" class="plot_top">
 			<div id="options" class="plot_options">
 				<div class="div_column">
@@ -334,17 +407,15 @@ $(document).ready(function() {
         	</div>
 			<div id="main_bottom" class="plot_bottom">
 			<div id="inputs" class="plot_inputs" title="Input Files:">
-
+				
 				<div>
 					<label class="header_text">Input Files:</label>
 					<input type="file" id="files1" name="files1[]" multiple=""/>
 				</div>
 				<div id="input_files" class="file_list">
-
+					
 				</div>
-				<div id="progress_parent" class="progress_frame">
-					<progress id="progress_indicator" class="progress_indicator" max="1.0" value="0.0"/>
-				</div>
+				
 			</div>
 			<div id="outputs" class="plot_outputs">
 				<div>
@@ -352,6 +423,7 @@ $(document).ready(function() {
 				<div id="output_files" class="file_list">
 				</div>
 			</div>
+			
 
     		</div>
 		<div id="footer"></div>
