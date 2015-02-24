@@ -195,6 +195,7 @@ def calculate_avgs_for_model(input_filename, station, col_name):
 
             if prev_year != None and prev_year != year:
                     temp_avg /= cnt
+                    precip_sum /= cnt
 
                     # Add values to propert tables
                     if prev_year not in station['temp_table']['data']:
@@ -217,6 +218,8 @@ def calculate_avgs_for_model(input_filename, station, col_name):
         # Add last values to table
         if prev_year != None:
             temp_avg /= cnt
+            precip_sum /= cnt
+            print("Precip avg: " + str(precip_sum))
 
             if prev_year not in station['temp_table']['data']:
                 station['temp_table']['data'][prev_year] = dict()
@@ -335,6 +338,7 @@ def write_table(table, first, last, out_file, col_names, log, year_range=1):
                             out_file.write(str(cur))
                     elif col in table['data'][cur]:
                         data = get_value(table['data'], cur, cur + year_range, col, log)
+                        print(str(data))
                         out_file.write(str(data))
                     #else:
                         #if log:
@@ -561,7 +565,7 @@ def get_plot_y_label(filename, log):
         if filename.find('Temperature') >= 0:
             return 'Temperature in Farenheit'
         elif filename.find('Precipitation') >= 0:
-            return 'Precipitation in Inches'
+            return 'Precipitation in Percent'
     except ValueError as ve:
         if log:
             pass
