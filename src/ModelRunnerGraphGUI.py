@@ -136,10 +136,11 @@ class GraphFrame(Frame):
 
         self.graph_frame.grid(row=0, column=1, sticky=Tkinter.N + Tkinter.S + Tkinter.E + Tkinter.W)
         #self.graph_frame.pack(side=Tkinter.RIGHT, expand=True, fill=Tkinter.BOTH)
-        if self.graph_canvas != None:
+        try:
             self.graph_canvas.get_tk_widget().grid(row=0, column=0, sticky=Tkinter.N + Tkinter.S + Tkinter.E + Tkinter.W)
             #self.graph_canvas.get_tk_widget().pack(expand=True, fill=Tkinter.BOTH)
-
+	except AttributeError:
+		pass
         self.log_filename_frame.grid(row=1, column=0, sticky=Tkinter.N + Tkinter.S + Tkinter.E + Tkinter.W)
         if self.log_label != None:
             self.log_label.pack(side=Tkinter.LEFT)
@@ -153,7 +154,10 @@ class GraphFrame(Frame):
         self.pack_forget()
         self.df_column_frame.grid_forget()
         self.graph_frame.grid_forget()
-        self.graph_canvas.get_tk_widget().grid_forget()
+	try:
+        	self.graph_canvas.get_tk_widget().grid_forget()
+	except AttributeError:
+		pass
         self.log_filename_frame.grid_forget()
         if self.log_label != None:
             self.log_label.pack_forget()
@@ -177,9 +181,13 @@ class GraphFrame(Frame):
         #if len(value_vars) == 0:
             #plot_selected = ModelRunnerPlots.get_avg_plot(self.plot_title, self.y_label, self.df, None)
         plt.close(self.plot_figure)
-        self.graph_canvas.get_tk_widget().grid_remove()
-        self.graph_canvas = FigureCanvasTkAgg(plot_selected, master=self.graph_frame.interior())
-        self.graph_canvas.get_tk_widget().grid(row=0, column=1, sticky=Tkinter.N + Tkinter.S + Tkinter.E + Tkinter.W)
+	try:
+        	self.graph_canvas.get_tk_widget().grid_remove()
+		self.graph_canvas = FigureCanvasTkAgg(plot_selected, master=self.graph_frame.interior())
+        	self.graph_canvas.get_tk_widget().grid(row=0, column=1, sticky=Tkinter.N + Tkinter.S + Tkinter.E + Tkinter.W)
+	except AttributeError:
+		pass
+        
         self.plot_figure = plot_selected
 
     def on_close(self):

@@ -197,7 +197,7 @@ def find_avg_dataframe(df, log=None, value_vars=list()):
     try:
         avg_col = None
         for col in df.columns:
-            if 'Average' in str(col):
+            if 'average' in str(col):
                 avg_col = col
         if avg_col != None:
             df_avg = pd.melt(df, id_vars=['year'], value_vars=[avg_col])
@@ -213,10 +213,15 @@ def find_avg_dataframe(df, log=None, value_vars=list()):
                     value_vars.remove(avg_col)
 
             df_lng = pd.melt(df, id_vars=['year'], value_vars=value_vars)
+            
+            print("Found average dataframe")
+	    
             return df_avg, df_lng
     except KeyError as ke:
         if log:
             logging.error(str(ke))
+        else:
+            print("Could not find average dataframe")
     return pd.DataFrame(), pd.DataFrame()
 
 def get_avg_plot(plot_title, y_label, df, log):
