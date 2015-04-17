@@ -407,7 +407,10 @@ def get_values_without_extremes(df, x_percent, index_column):
 
     return df
 
-def create_temp_vs_precip_scatter_plot_rev(plot_title, df_temp, df_precip, x_percent, historic_start_year, historic_end_year, future_start_year, future_end_year):
+def test_func():
+    print("Testing - is this here")
+
+def create_temp_vs_precip_scatter_plot_r2(plot_title, df_temp, df_precip, x_percent, historic_start_year, historic_end_year, future_start_year, future_end_year):
     '''
     This creates a temperature vs. percipitation plot, with extreme values that fall outside the percentile range
     replaced with the mean values of the respective columns.  The values of the plot are derived by taking the difference
@@ -416,43 +419,65 @@ def create_temp_vs_precip_scatter_plot_rev(plot_title, df_temp, df_precip, x_per
     file respectively.
     '''
 
-    year_column = 'year'
+      
 
-    temp_diffs, precip_diffs = get_model_diffs(df_temp, df_precip, historic_start_year, historic_end_year, future_start_year, future_end_year, year_column)
-
-    temp_diffs_without_extremes = get_data_without_extremes(temp_diffs, x_percent)
-    precip_diffs_without_extremes = get_data_without_extremes(precip_diffs, x_percent)
+    #temp_diffs_without_extremes = get_data_without_extremes(temp_diffs, x_percent)
+    #temp_diffs_min_max = np.percentile(temp_diffs.values, [x_percent * 100, 100 - x_percent * 100])
+    #precip_diffs_min_max = np.percentil(precip_diffs.values, [x_perecent * 100, 100 - x_percent * 100])
+    #precip_diffs_without_extremes = get_data_without_extremes(precip_diffs, x_percent)
     
     data_rows = list()
-    model_medians = [np.ones(len(temp_diffs)), np.ones(len(precip_diffs))]
+    #model_medians = [np.ones(len(temp_diffs)), np.ones(len(precip_diffs))]
     model_index = 0
+
     for model in temp_diffs:
+	row = [model, temp_diffs[model], precip_diffs[model]]
+	data_rows.append(row)
+
+    df_data = pd.DataFrame(data_rows)
+    print(df_data.head())
+    
+    #for model in temp_diffs:
         # So the calculation should be for all the years for all the models
         # The current calculation is taking the average
-    	median_index = round(float(len(temp_diffs[model])) / 2.0)
-        row = [model, temp_diffs[model].mean(), precip_diffs[model].mean()]
-        print("Row: " + str(row))
-        data_rows.append(row)
-	temp_median = temp_diffs[model][median_index]
-        precip_median = precip_diffs[model][median_index]
-      
-        model_medians[0][model_index] = temp_median
-        model_medians[1][model_index] = precip_median
-        model_index += 1
+    	#median_index = round(float(len(temp_diffs[model])) / 2.0)
+        
+	#model_column = np.array([model for i in range(len(temp_diffs[model]))])
+        #print(model_column)
+        #table = [model_column, temp_diffs[model], precip_diffs[model]]
 
-    median_index = round(float(len(temp_diffs)) / 2.0)
-    model_medians[0].sort()
-    model_medians[1].sort()
+        #print(table)
+	#rows = list()
+		
+        
+        #data_rows.append(table[0:10])
+	#temp_median = temp_diffs[model][median_index]
+        #precip_median = precip_diffs[model][median_index]
+      
+        #model_medians[0][model_index] = temp_median
+        #model_medians[1][model_index] = precip_median
+        #model_index += 1
+
+    #median_index = round(float(len(temp_diffs)) / 2.0)
+    #model_medians[0].sort()
+    #model_medians[1].sort()
     
-    data_rows.append(['median', model_medians[0][median_index], model_medians[1][median_index]])
+    #data_rows.append(['median', model_medians[0][median_index], model_medians[1][median_index]])
+    #print(table[0:10])
     
     x_column = 'Temperature'
     y_column = 'Precipitation'
     color_column = 'Model'
 
-    df_data = pd.DataFrame(data_rows, columns=[color_column, x_column, y_column])
+    #df_data = pd.DataFrame(pd.concat([df_temp, df_precip]), columns=[color_column, x_column, y_column])
 
-    plot = ggplot(aes(x=x_column, y=y_column, color=color_column), data=df_data)
+    #df_data = pd.melt(df_data, id_vars=["Model"], value_vars=["Temperature", "Precipitation"])
+
+    #print(df_data.columns)
+
+    #print(df_data["Model"].head())
+
+    plot = ggplot(aes(x=x_column, y=y_column), data=df_data)
 
     plot += geom_point()
 
@@ -461,43 +486,72 @@ def create_temp_vs_precip_scatter_plot_rev(plot_title, df_temp, df_precip, x_per
     ymax = None
     ymin = None
 
-    for model in temp_diffs_without_extremes:
-        temp_values_sorted = temp_diffs_without_extremes[model]
-        precip_values_sorted = precip_diffs_without_extremes[model]
+    xmin_candidates = []
+    xmax_candidates = []
+    ymin_candidates = []
+    ymax_candidates = []
+
+    for model in temp_diffs:
+	# Copy data into alternate data frames so that the values may 
+	# be changed without affecting the original data frames
+        temp_values_sorted = temp_diffs[model]
+        precip_values_sorted = precip_diffs[model]
 	temp_values_sorted.sort()
 	precip_values_sorted.sort()
-        first_index = 0
-        last_index = len(temp_values_sorted) - 1
+        percentile_min = x_percent * 100
+	percentile_max = 100 - x_percent * 100
+	x_boundaries = np.percentile(temp_diffs[model], [percentile_min, percentile_max])
+	y_boundaries = np.percentile(precip_diffs[model], [percentile_min, percentile_max])
+	print(x_boundaries)
+	print(y_boundaries)
+	if not np.isnan(x_boundaries[0]):
+	    xmin_candidates.append(x_boundaries[0])
+	if not np.isnan(x_boundaries[1]):
+	    xmax_candidates.append(x_boundaries[1])
+	if not np.isnan(y_boundaries[0]):
+	    ymin_candidates.append(y_boundaries[0])
+	if not np.isnan(y_boundaries[1]):
+	    ymax_candidates.append(y_boundaries[1])
+        #first_index = 0
+        #last_index = len(temp_values_sorted) - 1
         
-        if xmax == None or xmax < temp_values_sorted[last_index]:
-            xmax = temp_values_sorted[last_index]
+        #if xmax == None or xmax < temp_values_sorted[last_index]:
+            #xmax = temp_values_sorted[last_index]
 
-        if xmin == None or xmin < temp_values_sorted[first_index]:
-            xmin = temp_values_sorted[first_index]
+        #if xmin == None or xmin < temp_values_sorted[first_index]:
+            #xmin = temp_values_sorted[first_index]
 
-        if ymax == None or ymax < precip_values_sorted[last_index]:
-            ymax = precip_values_sorted[last_index]
+        #if ymax == None or ymax < precip_values_sorted[last_index]:
+            #ymax = precip_values_sorted[last_index]
 
-        if ymin == None or ymin < precip_values_sorted[last_index]:
-            ymin = precip_values_sorted[first_index]
+        #if ymin == None or ymin < precip_values_sorted[last_index]:
+            #ymin = precip_values_sorted[first_index]
 
-    print("Median temp: " + str(model_medians[0][median_index]))
-    print("Median precip: " + str(model_medians[1][median_index]))
-    print("Min temp: " + str(xmin))
-    print("Max temp: " + str(xmax))
-    print("Min precip: " + str(ymin))
-    print("Max precip: " + str(ymax))
+    x_max = max(xmax_candidates)
+    x_min = min(xmin_candidates)
+    y_max = max(ymax_candidates)
+    y_min = min(ymin_candidates)
+
+    # Now, attempt to find the points that are closest to the xmin, xmax, ymin, ymax
+    
+
+    #print("Median temp: " + str(model_medians[0][median_index]))
+    #print("Median precip: " + str(model_medians[1][median_index]))
+    print("Min temp: " + str(x_min))
+    print("Max temp: " + str(x_max))
+    print("Min precip: " + str(y_min))
+    print("Max precip: " + str(y_max))
             
-    plot += geom_rect(aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, fill='#ff0000', alpha=0.005))
-    plot += geom_vline(aes(x=xmin, ymin=ymin, ymax=ymax, linetype='solid'))
-    plot += geom_vline(aes(x=xmax, ymin=ymin, ymax=ymax, linetype='solid'))
-    plot += geom_hline(aes(xmin=xmin, xmax=xmax, y=ymin, linetype='solid'))
-    plot += geom_hline(aes(xmin=xmin, xmax=xmax, y=ymax, linetype='solid'))
+    plot += geom_rect(aes(xmin=x_min, xmax=x_max, ymin=y_min, ymax=y_max, fill='#00ff00', alpha=0.05))
+    plot += geom_vline(aes(xintercept=x_min, ymin=y_min, ymax=y_max, color="#000000", linetype='solid'))
+    plot += geom_vline(aes(xintercept=x_max, ymin=y_min, ymax=y_max, color="#000000", linetype='solid'))
+    plot += geom_hline(aes(xmin=x_min, xmax=x_max, yintercept=y_min, color="#000000", linetype='solid'))
+    plot += geom_hline(aes(xmin=x_min, xmax=x_max, yintercept=y_max, color="#000000", linetype='solid'))
 
     # Set up plot details
     plot += ggtitle(plot_title)
     plot += xlab(x_column + ' Farenheit')
-    plot += ylab(y_column + ' Millimeters')
+    plot += ylab('Chance of ' + y_column)
 
     fig = plot.draw()
 
